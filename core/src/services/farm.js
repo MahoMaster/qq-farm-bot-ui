@@ -461,22 +461,6 @@ function getPlantSizeBySeedId(seedId) {
 }
 
 /**
- * 种植大尺寸种子 (2x2 等)，一次性传入所有地块 ID
- */
-async function plantLargeSeed(seedId, landIds) {
-    try {
-        const body = encodePlantRequest(seedId, landIds);
-        const { body: replyBody } = await sendMsgAsync('gamepb.plantpb.PlantService', 'Plant', body);
-        const reply = types.PlantReply.decode(replyBody);
-        const changedLands = Array.isArray(reply && reply.land) ? reply.land : [];
-        return changedLands.length > 0;
-    } catch (e) {
-        logWarn('种植', `大尺寸种子种植失败: ${e.message}`);
-        return false;
-    }
-}
-
-/**
  * 种植 - 游戏中拖动种植间隔很短，这里用 50ms
  */
 async function plantSeeds(seedId, landIds, options = {}) {
@@ -1019,67 +1003,6 @@ function sortBagSeedsByPriority(bagSeeds, priority) {
  * row2:  3     7    11    15    19    23
  * row3:  4     8    12    16    20    24
  */
-const FARM_ROWS = 4;
-const FARM_COLS = 6;
-
-function landIdToPosition(landId) {
-    const id = toNum(landId);
-    if (id < 1 || id > FARM_ROWS * FARM_COLS) return null;
-    const col = Math.floor((id - 1) / FARM_ROWS);
-    const row = (id - 1) % FARM_ROWS;
-    return { row, col };
-}
-
-function positionToLandId(row, col) {
-    if (row < 0 || row >= FARM_ROWS || col < 0 || col >= FARM_COLS) return null;
-    return col * FARM_ROWS + row + 1;
-}
-
-/**
- * 查找可以种植 size x size 作物的连续地块组
- * @param {number[]} emptyLandIds - 空地 ID 列表
- * @param {number} size - 作物尺寸 (2 表示 2x2)
- * @returns {number[][]} - 可种植的地块组列表，每组包含 size*size 个连续地块 ID
- */
-function findContiguousLandGroups(emptyLandIds, size) {
-    if (size <= 1) {
-        return emptyLandIds.map(id => [id]);
-    }
-
-    const emptySet = new Set(emptyLandIds.map(id => toNum(id)));
-    const groups = [];
-    const usedLands = new Set();
-
-    // 遍历所有可能的左上角位置
-    for (let row = 0; row <= FARM_ROWS - size; row++) {
-        for (let col = 0; col <= FARM_COLS - size; col++) {
-            const groupLands = [];
-            let isValid = true;
-
-            // 检查 size x size 区域内的所有地块
-            for (let dr = 0; dr < size && isValid; dr++) {
-                for (let dc = 0; dc < size && isValid; dc++) {
-                    const landId = positionToLandId(row + dr, col + dc);
-                    if (!landId || !emptySet.has(landId) || usedLands.has(landId)) {
-                        isValid = false;
-                    } else {
-                        groupLands.push(landId);
-                    }
-                }
-            }
-
-            if (isValid && groupLands.length === size * size) {
-                groups.push(groupLands);
-                // 标记这些地块已被使用
-                for (const id of groupLands) {
-                    usedLands.add(id);
-                }
-            }
-        }
-    }
-
-    return groups;
-}
 
 /**
  * 从商店购买种子并种植

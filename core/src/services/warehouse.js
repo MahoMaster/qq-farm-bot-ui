@@ -393,7 +393,7 @@ async function getBagDetail() {
 
 /**
  * 获取背包中的所有种子
- * @returns {Promise<Array<{seedId: number, name: string, count: number, requiredLevel: number, image: string, plantSize: number}>>}
+ * @returns {Promise<Array<{seedId: number, name: string, count: number, requiredLevel: number, image: string, plantSize: number}>>} 种子列表
  */
 async function getBagSeeds() {
     const bagReply = await getBag();
